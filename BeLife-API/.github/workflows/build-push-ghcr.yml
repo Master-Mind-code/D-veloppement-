@@ -1,0 +1,142 @@
+name: Build and Push GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      BELIFE_IMAGE_VERSION:
+        type: string
+        description: 'The version of the image to build and push'
+        required: true
+      ENVIRONMENT:
+        type: choice
+        description: 'Choose the environment you want to build to'
+        options:
+          - development
+          - production
+
+env:
+  CONTAINER_REGISTRY: ghcr.io
+  CONTAINER_REGISTRY_NAMESPACE: kangson-e
+
+  BELIFE_IMAGE_VERSION: '1.0.0'
+  BELIFE_API_DBIF_IMAGE_NAME: belife_apis_im
+
+  NODE_ENV: development
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  prepare-variables:
+    name: Prepare variables for image build and Unit & Integration Tests
+    runs-on: ubuntu-24.04
+    outputs:
+      container-registry: ${{ env.CONTAINER_REGISTRY }}
+      container-registry-namespace: ${{ env.CONTAINER_REGISTRY_NAMESPACE }}
+      node-env: ${{ steps.nodeEnv.outputs.value }}
+      belife-image-version: ${{ steps.belifeImageVersion.outputs.value }}
+      belife-api-dbif-image-name: ${{ env.BELIFE_API_DBIF_IMAGE_NAME }}
+    steps:
+      - name: Initialize belife-image-version
+        id: belifeImageVersion
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.BELIFE_IMAGE_VERSION }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ env.BELIFE_IMAGE_VERSION }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Intitialize node-env
+        id: nodeEnv
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "value=${{ inputs.ENVIRONMENT }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ env.NODE_ENV }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-to-artifact:
+    runs-on: ubuntu-24.04
+    needs: [prepare-variables]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 'Belife API DBIF'
+            dockerfile: ./Dockerfile
+            image: ${{ needs.prepare-variables.outputs.container-registry }}/${{ needs.prepare-variables.outputs.container-registry-namespace }}/${{ needs.prepare-variables.outputs.belife-api-dbif-image-name }}
+            upload-name: ${{ needs.prepare-variables.outputs.belife-api-dbif-image-name }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{ version }},value=v${{ needs.prepare-variables.outputs.belife-image-version }}
+            type=ref,event=branch
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          tags: ${{ steps.meta.outputs.tags }}
+          outputs: type=docker,dest=/tmp/${{ matrix.upload-name }}.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.upload-name }}
+          path: /tmp/${{ matrix.upload-name }}.tar
+          retention-days: 1
+
+  push-to-registry:
+    runs-on: ubuntu-24.04
+    needs: [prepare-variables, build-to-artifact]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 'Belife API DBIF'
+            dockerfile: ./Dockerfile
+            image: ${{ needs.prepare-variables.outputs.container-registry }}/${{ needs.prepare-variables.outputs.container-registry-namespace }}/${{ needs.prepare-variables.outputs.belife-api-dbif-image-name }}
+            upload-name: ${{ needs.prepare-variables.outputs.belife-api-dbif-image-name }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_TOKEN_21112025 }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.upload-name }}
+          path: /tmp
+
+      - name: load image
+        run: |
+          docker load --input /tmp/${{ matrix.upload-name }}.tar
+          docker image ls -a
+          docker image push --all-tags ${{ matrix.image }}

@@ -1,0 +1,31 @@
+# Git
+
+.git
+.github
+.gitignore
+
+# API Documentation
+
+.postman
+postman
+index.yaml
+
+# Dev environment files
+
+.devcontainer
+.env.development
+info.txt
+testing.txt
+serverConfiguration.md
+README.md
+
+# Docker congigs
+
+Dockerfile
+Dockerfile.local
+docker-compose.yml
+
+# logs
+
+/logs/logs/_.log
+/logs/_.log

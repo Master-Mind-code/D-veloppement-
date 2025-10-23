@@ -1,0 +1,235 @@
+version: '3.8'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  postgresql-master:
+    platform: linux/amd64
+    image: docker.io/bitnami/postgresql:17
+    container_name: postgresdb_master_con
+    user: $CURRENT_UID
+    ports:
+      - $PGDB_DOCKER_PORT
+    volumes:
+      - 'postgresql_master_data:/bitnami/postgresql'
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=$PGDB_REPLICATION_USER
+      - POSTGRESQL_REPLICATION_PASSWORD=$PGDB_REPLICATION_PASSWORD
+      - POSTGRESQL_USERNAME=$PGDB_USER
+      - POSTGRESQL_PASSWORD=$PGDB_ROOT_PASSWORD
+      - POSTGRESQL_DATABASE=$PGDB_DATABASE
+      - ALLOW_EMPTY_PASSWORD=no
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', $PGDB_USER]
+    networks:
+      - app-tier
+  postgresql-slave:
+    platform: linux/amd64
+    image: docker.io/bitnami/postgresql:17
+    container_name: postgresdb_slave_con
+    user: $CURRENT_UID
+    ports:
+      - $PGDB_DOCKER_PORT
+    depends_on:
+      - postgresql-master
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=$PGDB_REPLICATION_USER
+      - POSTGRESQL_REPLICATION_PASSWORD=$PGDB_REPLICATION_PASSWORD
+      - POSTGRESQL_MASTER_HOST=postgresql-master
+      - POSTGRESQL_PASSWORD=$PGDB_ROOT_PASSWORD
+      - POSTGRESQL_MASTER_PORT_NUMBER=$PGDB_DOCKER_PORT
+      - ALLOW_EMPTY_PASSWORD=no
+    networks:
+      - app-tier
+  pgbouncer:
+    platform: linux/amd64
+    depends_on:
+      - postgresql-master
+    image: docker.io/bitnami/pgbouncer:1
+    container_name: pgbouncer_con
+    user: $CURRENT_UID
+    ports:
+      - $PG_BOUNCER_LOCAL_PORT:$PG_BOUNCER_DOCKER_PORT
+    environment:
+      - POSTGRESQL_HOST=postgresql-master
+      - POSTGRESQL_USERNAME=$PGDB_USER
+      - POSTGRESQL_DATABASE=$PGDB_DATABASE
+      - POSTGRESQL_PASSWORD=$PGDB_ROOT_PASSWORD
+      - PGBOUNCER_DATABASE=$PGDB_DATABASE
+      - PGBOUNCER_DSN_0=postgresql-master=host=postgresql-master port=5432 dbname=$PGDB_DATABASE
+    networks:
+      - app-tier
+
+  mongodb-primary:
+    platform: linux/amd64
+    image: bitnami/mongodb:latest
+    container_name: mongodb_primary_con
+    ports:
+      - $MIP_PORT_NUMBER
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-primary
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_ROOT_PASSWORD=$MONGODB_ROOT_PASSWORD
+      - MONGODB_REPLICA_SET_KEY=$MONGODB_REPLICA_SET_KEY
+      - MONGODB_DATABASE=$MONGODB_DATABASE
+      - MONGODB_PASSWORD=$MONGODB_PASSWORD
+      - MONGODB_USERNAME=$MONGODB_USERNAME
+      - MONGODB_SYSTEM_LOG_VERBOSITY=3
+      - MONGODB_ENABLE_DIRECTORY_PER_DB=yes
+      - EXPERIMENTAL_DOCKER_DESKTOP_FORCE_QEMU=1
+    volumes:
+      - 'mongodb_master_data:/bitnami/mongodb'
+    networks:
+      - app-tier
+  mongodb-secondary:
+    platform: linux/amd64
+    image: bitnami/mongodb:latest
+    depends_on:
+      - mongodb-primary
+    container_name: mongodb_secondary_con
+    ports:
+      - $MIP_PORT_NUMBER
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-secondary
+      - MONGODB_REPLICA_SET_MODE=secondary
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=$MIP_ROOT_PASSWORD
+      - MONGODB_REPLICA_SET_KEY=$MONGODB_REPLICA_SET_KEY
+      - MONGODB_INITIAL_PRIMARY_PORT_NUMBER=$MIP_PORT_NUMBER
+      - EXPERIMENTAL_DOCKER_DESKTOP_FORCE_QEMU=1
+    networks:
+      - app-tier
+  mongodb-arbiter:
+    platform: linux/amd64
+    image: bitnami/mongodb:latest
+    depends_on:
+      - mongodb-primary
+    container_name: mongodb_arbiter_con
+    ports:
+      - $MIP_PORT_NUMBER
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-arbiter
+      - MONGODB_REPLICA_SET_MODE=arbiter
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=$MIP_ROOT_PASSWORD
+      - MONGODB_REPLICA_SET_KEY=$MONGODB_REPLICA_SET_KEY
+      - MONGODB_INITIAL_PRIMARY_PORT_NUMBER=$MIP_PORT_NUMBER
+      - EXPERIMENTAL_DOCKER_DESKTOP_FORCE_QEMU=1
+    networks:
+      - app-tier
+  mongodb-hidden:
+    platform: linux/amd64
+    image: bitnami/mongodb:latest
+    depends_on:
+      - mongodb-primary
+    container_name: mongodb_hidden_con
+    ports:
+      - $MIP_PORT_NUMBER
+    environment:
+      - MONGODB_ADVERTISED_HOSTNAME=mongodb-hidden
+      - MONGODB_REPLICA_SET_MODE=hidden
+      - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
+      - MONGODB_INITIAL_PRIMARY_PORT_NUMBER=$MIP_PORT_NUMBER
+      - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=$MIP_ROOT_PASSWORD
+      - MONGODB_REPLICA_SET_KEY=$MONGODB_REPLICA_SET_KEY
+      - EXPERIMENTAL_DOCKER_DESKTOP_FORCE_QEMU=1
+    networks:
+      - app-tier
+
+  redis:
+    image: docker.io/bitnami/redis:latest
+    container_name: belife_jobs_redis
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
+      - REDIS_PORT_NUMBER=$REDIS_PORT
+      - REDIS_DATABASE=$REDIS_DATABASE
+    ports:
+      - $REDIS_PORT:$REDIS_PORT
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+    networks:
+      - app-tier
+
+  belife-apis:
+    depends_on:
+      - pgbouncer
+      - postgresql-master
+      - redis
+      - belife-keycloak
+    build:
+      context: ../
+      dockerfile: Dockerfile.local
+    environment:
+      - NODE_SESSION_SECRET=$NODE_SESSION_SECRET
+      - PSQL_HOST=pgbouncer
+      - PSQL_USER=$PGDB_USER
+      - PSQL_USER_PASSWORD=$PGDB_ROOT_PASSWORD
+      - PSQL_DB_NAME=$PGDB_DATABASE
+      - PSQL_PORT=$PG_BOUNCER_DOCKER_PORT
+      - PSQL_DRIVER=postgres
+      - REDIS_HOST=$REDIS_HOST
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - REDIS_PORT=$REDIS_PORT
+      - REDIS_DATABASE=$REDIS_DATABASE
+    command: sleep infinity
+    image: belife_apis_im
+    container_name: belife_apis_con
+    volumes:
+      - ..:/workspace
+      - dummy:/workspace/.venv
+    networks:
+      - app-tier
+
+  belife-keycloak:
+    depends_on:
+      - pgbouncer
+      - postgresql-master
+    restart: always
+    container_name: belife_keycloak_con
+    image: quay.io/keycloak/keycloak:26.3.2
+    entrypoint: ['/opt/keycloak/bin/kc.sh', 'start-dev']
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=pgbouncer
+      - KC_DB_URL_PORT=$PG_BOUNCER_DOCKER_PORT
+      - KC_DB_URL_DATABASE=$PGDB_DATABASE
+      - KC_DB_PASSWORD=$PGDB_ROOT_PASSWORD
+      - KC_DB_USERNAME=$PGDB_USER
+      - KC_DB_SCHEMA=public
+      - KC_HOSTNAME=localhost
+      - KC_HOSTNAME_PORT=8080
+      - KC_BOOTSTRAP_ADMIN_USERNAME=$KC_BOOTSTRAP_ADMIN_USERNAME
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=$KC_BOOTSTRAP_ADMIN_PASSWORD
+      - KC_LOG_LEVEL=info
+      - KC_PROXY=edge
+      - KC_METRICS_ENABLED=true
+      - KC_HEALTH_ENABLED=true
+      - KC_HOSTNAME_STRICT_BACKCHANNEL=true
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health/ready']
+      interval: 15s
+      timeout: 2s
+      retries: 15
+    volumes:
+      - 'keycloak_data:/opt/keycloak/data'
+    ports:
+      - '7080:8080'
+    networks:
+      - app-tier
+
+volumes:
+  dummy:
+  postgresql_master_data:
+    driver: local
+  mongodb_master_data:
+    driver: local
+  redis_data:
+    driver: local
+  keycloak_data:
+    driver: local

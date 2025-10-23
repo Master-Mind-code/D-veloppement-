@@ -1,0 +1,13 @@
+{
+    "color": true,
+    "exit": true,
+    "extension": [
+        "ts"
+    ],
+    "spec": [
+        "tets/**/*.test.ts",
+        "test/**/**/*.test.ts"
+    ],
+    "require": "mocha-suppress-logs",
+    "reporter": "spec"
+}

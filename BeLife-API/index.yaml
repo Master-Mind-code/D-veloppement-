@@ -1,0 +1,1820 @@
+openapi: '3.0.0'
+info:
+  version: '1.0.0'
+  title: 'Belife APIs'
+  description: Momo Etude premium insurance subscription
+servers:
+  - url: "http://localhost:3500/api/v1"
+    description: Local environment
+  - url: "https://apis-mobilemtn.prubelife.app/api/v1"
+    description: Development server environment
+      
+paths:
+  /auth/login:
+    post:
+        summary: Logs in and returns the authentication cookie
+        requestBody:
+            content:
+              application/json:
+                schema:
+                    $ref: "#/components/schemas/LoginRequest"
+                examples:
+                  John:
+                    value:
+                        email: "john.doe@unknown.com"
+                        password: "12345678a"
+        security: []
+        responses:
+          200:
+            description: >
+                Successfully authenticated.
+                The session ID is returned in a cookie named `connect.sid`.
+                You need to include this cookie in subsequent requests.
+            headers:
+                Set-Cookie:
+                    schema:
+                        type: string
+                        example: connect.sid=abcde12345; Path=/; HttpOnly; Expires=Fri, 29 Nov 2024 15:51:17 GMT;
+            content:
+              application/json:
+                schema:
+                    type: object
+                    properties:
+                      status:
+                        type: boolean
+                      message:
+                        type: string
+          500:
+            description: Unexpected error
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+  /auth/logout:
+    delete:
+        summary: Logout from system
+        security:
+          - cookieAuth: [] 
+        responses:
+          200:
+            description: OK
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            status:
+                                type: boolean
+                            message:
+                                type: string
+          500:
+            description: Unexpected error
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Error'
+  
+  /customers:
+    get:
+      summary: Read all existant customers
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: All the registred customers for Momo Etude insurance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCustomers'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'        
+  /customers/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the customer
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/CustomerId'
+    get:
+      summary: Read a customer
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The customer corresponding to the provided `customerId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCustomer'
+        404:
+          description: No customer found for the provided `customerId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a customer
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                birthDate:
+                  type: string
+            examples:
+              John:
+                value:
+                  fullName: "John Doe"
+                  birthDate: "1960/01/01"
+      responses:
+        200:
+          description: The customer corresponding to the provided `customerId` was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCustomer'
+        404:
+          description: No customer found for the provided `customerId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /beneficiaries:
+    get:
+      summary: Read all existant beneficiaries
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: All the registred beneficiaries for Momo Etude insurance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBeneficiaries'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'     
+  /beneficiaries/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the beneficiary
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/BeneficiaryId'
+    get:
+      summary: Read a beneficiary
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The beneficiary corresponding to the provided `beneficiaryId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBeneficiary'
+        404:
+          description: No beneficiary found for the provided `beneficiaryId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a beneficiary
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                phoneNumber:
+                  type: string
+            examples:
+              John:
+                value:
+                  fullName: "John Doe"
+                  phoneNumber: "0500000001"
+      responses:
+        200:
+          description: The beneficiary corresponding to the provided `beneficiaryId` was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBeneficiary'        
+        404:
+          description: No beneficiary found for the provided `beneficiaryId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /insurances:
+    get:
+      summary: Read all existant insurances
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: All the registred insurances on Prudential Platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInsurances'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Add a new insurance
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                type:
+                  type: string
+                description:
+                  type: string
+                membershipAmount:
+                  type: number
+            examples:
+              "MoMo ETUDE":
+                value:
+                  productName: "MoMo ETUDE"
+                  type: "Assurance mixte (santé, décès et épargne)"
+                  description: >
+                    MoMo ETUDE permet à l'Adherent et sa famille de beneficier d'une aide financiere en cas de consultation et/ou d'hospitalisation, 
+                    d'un capital garanti en cas de deces et d'une epargne sans frais. Etre agé de 18 à 65 ans. Delai de carence : 1 mois. Duree du contrat : 5 ans. 
+                    L’epargne est accessible a partir de 12 mois de cotisations effectives.Pour plus d'info, appelez le 555  ou cliquez sur le lien urlMoMoPrudential.
+                  membershipAmount: 2000
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInsurance'         
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /insurances/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the insurance
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/InsuranceId'
+    get:
+      summary: Read an insurance
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The insurance corresponding to the provided `InsuranceId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInsurance'
+        404:
+          description: No insurance found for the provided `InsuranceId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update an insurance
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                type:
+                  type: string
+                description:
+                  type: string
+                membershipAmount:
+                  type: number
+            examples:
+              "MoMo ETUDE":
+                value:
+                  productName: "MoMo ETUDE"
+                  type: "Assurance mixte (santé, décès et épargne)"
+                  description: >
+                    MoMo ETUDE permet à l'Adherent et sa famille de beneficier d'une aide financiere en cas de consultation et/ou d'hospitalisation, 
+                    d'un capital garanti en cas de deces et d'une epargne sans frais. Etre agé de 18 à 65 ans. Delai de carence : 1 mois. Duree du contrat : 5 ans. 
+                    L’epargne est accessible a partir de 12 mois de cotisations effectives.Pour plus d'info, appelez le 555  ou cliquez sur le lien urlMoMoPrudential.
+                  membershipAmount: 2000
+      responses:
+        201:
+          description: The insurance corresponding to the provided `InsuranceId` was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInsurance'         
+        404:
+          description: No insurance found for the provided `InsuranceId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /subscriptions:
+    get:
+      summary: Read all existant subscriptions
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: All the registred subscriptions for Momo Etude insurance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSubscriptions'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'     
+  /subscriptions/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the subscription
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/SubscriptionId'
+    get:
+      summary: Read a subscription
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The subscription corresponding to the provided `subscriptionId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSubscription'
+        404:
+          description: No subscription found for the provided `subscriptionId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /premiums:
+    get:
+      summary: Read all existant premiums
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: All the stored premiums payments on Prudential Platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremiums'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'     
+  /premiums/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the premium
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/PremiumId'
+    get:
+      summary: Read a premium
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The premium corresponding to the provided `PremiumId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremium'
+        404:
+          description: No premium found for the provided `PremiumId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /premiumfees:
+    get:
+      summary: Read all existant insurance premiums monthly fee
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: All the stored insurance premiums monthly fee on Prudential Platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremiumFees'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Add a new insurance premiums monthly fee
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                insuranceId:
+                  $ref: '#/components/schemas/InsuranceId'
+                premiumFeeFormula:
+                  type: string
+                  enum:
+                    - INDIVIDUELLE
+                    - FAMILLE
+                premiumMonthlyFee:
+                  type: number
+            examples:
+              "FORMULE INDIVIDUELLE":
+                value:
+                  insuranceId: "1cb9521a-db21-40b0-a1fc-325c18c80a4b"
+                  premiumFeeFormula: "INDIVIDUELLE"
+                  premiumMonthlyFee: 3900
+              "FORMULE FAMILLE":
+                value:
+                  insuranceId: "78993deb-1825-402c-bde4-2cc6437741c8"
+                  premiumFeeFormula: "FAMILLE"
+                  premiumMonthlyFee: 5700
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremiumFee'         
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /premiumfees/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the insurance premium monthly fee
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/PremiumFeeId'
+    get:
+      summary: Read a insurance premium monthly fee
+      security:
+        - cookieAuth: [] 
+      responses:
+        200:
+          description: The insurance premium monthly fee corresponding to the provided `PremiumFeeId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremiumFee'
+        404:
+          description: No insurance premium monthly fee found for the provided `PremiumFeeId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'     
+
+  /users:
+    get:
+      summary: Read all existant users
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: All the users on Prudential Platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUsers'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Add a new user
+      security:
+        - cookieAuth: [] 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                role:
+                  $ref: '#/components/schemas/UserRole'
+                password:
+                  type: string
+            examples:
+              "John Doe":
+                value:
+                  fullName: "John Doe"
+                  email: "john.doe@unknown.com"
+                  role: "DEVELOPER"
+                  password: "my_strong_password"
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUser'         
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the user
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+    get:
+      summary: Read a user
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: The user account corresponding to the provided `UserId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUser'
+        404:
+          description: No user account found for the provided `UserId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a user
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                role:
+                  $ref: '#/components/schemas/UserRole'
+                password:
+                  type: string
+            examples:
+              "John Doe":
+                value:
+                  fullName: "John Doe"
+                  email: "john.doe@unknown.com"
+                  role: "ADMINISTRATOR"
+                  password: "my_strong_password"
+      responses:
+        201:
+          description: The user corresponding to the provided `UserId` was updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUser'         
+        404:
+          description: No user account found for the provided `UserId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error' 
+    delete:
+      summary: Delete a user
+      security:
+        - cookieAuth: []
+      responses:
+        201:
+          description: The user corresponding to the provided `UserId` was deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponses'         
+        400:
+          description: No user account found for the provided `UserId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /contracts:
+    get:
+      summary: Read all existant contracts
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: All the customer's contracts on Prudential Platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseContracts'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /contracts/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the customer's contract
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ContractId'
+    get:
+      summary: Read a customer's contract
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: The customer's contract corresponding to the provided `ContractId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseContract'
+        404:
+          description: No contract found for the provided `ContractId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ussd/insurances:
+    get:
+      summary: Read all existant insurances
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: All the registred insurances on Prudential Platform.
+          headers:
+            Server:
+              schema:
+                type: string
+                description: Web server version.
+            Date:
+              schema:
+                type: string
+                description: The UTC date/time at which the request was answered.
+            Content-Type:
+              schema:
+                type: string
+                description: The content type of the response.
+            Content-Length:
+              schema:
+                type: number
+                description: The content length of the response.
+            Connection:
+              schema:
+                type: string
+                description: Controls whether the network connection stays open after the current transaction finishes.
+            X-Powered-By:
+              schema:
+                type: string
+                description: The application or framework that generated the response.
+            RateLimit-Policy:
+              schema:
+                type: string
+                description: Conveys the quota policies that apply to the client.
+            RateLimit:
+              schema:
+                type: string
+                description: Request limit per hour.
+            Vary:
+              schema:
+                type: string
+                description: Describes the parts of the request message (aside from the method and URL) that influenced the content of the response it occurs in.
+            ETag:
+              schema:
+                type: string
+                description: Used for Web cache validation and conditional request from browsers to resources.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInsurances'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ussd/insurances/{id}:
+    parameters:
+      - name: id
+        description: The unique identifier of the insurance
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/InsuranceId'
+    get:
+      summary: Read an insurance and it's monthly premium fees
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: The insurance and its monthly premium fees corresponding to the provided `InsuranceId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfPremiumFees'
+        404:
+          description: No insurance found for the provided `InsuranceId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ussd/contracts/{phoneNumber}:
+    parameters:
+      - name: phoneNumber
+        description: The customer's phone number
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get customer's contract information
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: >
+           The customer has no contract and it's ok to proceed with a subscription. There are two cases:
+            1- Customer is already know of our service but his payment at the subscription failed or timeout
+            2- Customer is unknow of our service
+          content:
+            application/json:
+             schema: 
+                $ref: '#/components/schemas/ApiResponseContracts'
+        404:
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ussd/contracts/{contractNumber}/status:
+    parameters:
+      - name: contractNumber
+        description: The customer's contract number
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get customer's contract status
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: >
+            The customer's contract status (expectedPayments, expectedTotalPayment, isUpToDate, missedPayments)
+          content:
+            application/json:
+             schema: 
+                $ref: '#/components/schemas/ApiResponseContractStatus'
+        404:
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ussd/customers/{phoneNumber}:
+    parameters:
+      - name: phoneNumber
+        description: The customer's phone number
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get all customer's subscriptions information
+      security:
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: >
+           This return all the customer's subscriptions on the platform for you to verify the eligibility before payment.
+            1. If the customer has 3 subscriptions deny creating a new one
+            2. If the customer submitted a subscription with the same beneficiary deny creating a new one
+            3. If the customer do not enter the above cases allow creating a new one
+          content:
+            application/json:
+             schema: 
+                $ref: '#/components/schemas/ApiResponseSubscriptions'
+        404:
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ussd/subscriptions:
+    post:
+      summary: Add a new subscription
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRequestBodyCreateSubscription'
+            examples:
+              "John Doe":
+                value:
+                  customer:
+                    fullName: "John Doe"
+                    phoneNumber: "0500000000"
+                    birthDate: "1960/01/01"
+                  beneficiary:
+                    fullName: "Jessica Smith"
+                    phoneNumber: "0500000001"
+                  paymentMode: "PAIEMENT_MANUEL"
+                  paymentReference: "PRUBELIFE_MTN_METUDE_20241207221800_0500000000"
+                  insuranceId: "174cc3a8-c2d3-41e8-a985-be423bd12a9c"
+                  premiumFeeId: "1cb9521a-db21-40b0-a1fc-325c18c80a4b"
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSubscription'
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a subscription (payment status or payment mode)
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRequestBodyUpdateSubscription'
+            examples:
+              "Update payment status":
+                value:
+                  paymentStatus: "ECHOUE"
+                  paymentReference: "PRUBELIFE_MTN_METUDE_20241207221800_0500000000"
+              "Update payment mode":
+                value:
+                  paymentMode: "PRELEVEMENT_AUTOMATIQUE"
+                  paymentReference: "PRUBELIFE_MTN_METUDE_20241207221800_0500000000"
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSubscription'
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ussd/premiums:
+    post:
+      summary: Add a new premium payment
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRequestBodyCreatePremium'
+            examples:
+              "John Doe":
+                value:
+                  "contractNumber": "0500000000241214"
+                  "paymentReference": "PRUBELIFE_MTN_METUDE_20241206004400_0500000000"
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremium'
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update a premium payment (payment status)
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiRequestBodyUpdatePremium'
+            examples:
+              "Update payment status":
+                value:
+                  paymentStatus: "ECHOUE"
+                  paymentReference: "PRUBELIFE_MTN_METUDE_20241206004400_0500000000"
+      responses:
+        201:
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePremium'
+        400:
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        
+components:
+  schemas:
+    LoginRequest:
+        description: A JSON object containing user credentials.
+        type: object
+        properties:
+          email:
+            type: string
+          password:
+            type: string
+    
+    CustomerId:
+      description: The unique identifier of a customer (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Customer:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/CustomerId"
+        fullName:
+          type: string
+        birthDate:
+          type: string
+        phoneNumber:
+          type: string
+        address:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true  
+    ArrayOfCustomers:
+      type: array
+      items:
+        $ref: "#/components/schemas/Customer"
+    BeneficiaryId:
+      description: The unique identifier of the customer beneficiary (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Beneficiary:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/BeneficiaryId"
+        fullName:
+          type: string
+        phoneNumber:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true  
+    ArrayOfBeneficiaries:
+      type: array
+      items:
+        $ref: "#/components/schemas/Beneficiary"
+    InsuranceId:
+      description: The unique identifier of available insurances (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Insurance:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/InsuranceId'
+        productName:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        membershipAmount:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true  
+    ArrayOfInsurances:
+      type: array
+      items:
+        $ref: "#/components/schemas/Insurance"
+    SubscriptionId: 
+      description: The unique identifier of the customer's subscription (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Subscription:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SubscriptionId'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        beneficiary:
+          $ref: '#/components/schemas/Beneficiary'
+        insurance:
+          $ref: '#/components/schemas/Insurance'
+        premiumFee:
+          $ref: '#/components/schemas/PremiumFee'
+        paymentMode:
+          type: string
+          description: >
+           `paymentMode` is enum: ["PRELEVEMENT_AUTOMATIQUE", "PAIEMENT_MANUEL"]
+        paymentStatus:
+          type: string
+          description: >
+           `paymentStatus` is enum: ["REUSSI", "ECHOUE", "EN_ATTENTE"]
+        paymentReference:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true  
+    ArrayOfSubscriptions:
+      type: array
+      items:
+        $ref: "#/components/schemas/Subscription"
+    PremiumId:
+      description: The unique identifier of a customer's premium payment (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Premium:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PremiumId'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+        paymentAmount:
+          type: number
+        paymentStatus:
+          type: string
+          description: >
+           `paymentStatus` is enum: ["REUSSI", "ECHOUE", "EN_ATTENTE"]
+        paymentReference:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true  
+    ArrayOfPremiums:
+      type: array
+      items:
+        $ref: "#/components/schemas/Premium"
+    UserId:
+      description: The unique identifier of a backoffice user (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    UserRole:
+      description: >
+        The role a user can hold on the Prudential Belife Platform.
+        The privileges on this platform are: CREATE, READ, UPDATE and DELETE
+        1. ADMINISTRATOR: This role is reserve to Kangson-e staff (Has all privileges).
+        2. DEVELOPER: This role is reserve to Kangson-e staff (Has READ privilege and in some case UPDATE)
+        3. PRUBELIFE_STAFF: This role is reserve to Prudential Belife staff. (Has READ privilege and in some case CREATE and UPDATE)
+      type: string
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        password:
+          type: string
+    ArrayOfUsers:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
+    ContractId:
+      description: The unique identifier of a customer's contract (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    Contract:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ContractId'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        insurance:
+          $ref: '#/components/schemas/Insurance'
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+        totalPayedPremiums:
+          type: number
+        contractStatus:
+          type: string
+          enum:
+            - ACTIF
+            - INACTIF
+            - RESILIER
+        contractNumber:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true
+    ArrayOfContracts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Contract'
+    PremiumFeeId:
+      description: The unique identifier of a insurance's premium monthly fee (UUID v4). Not needed in requestBody.
+      type: string
+      format: uuid
+    PremiumFee:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PremiumFeeId'
+        premiumFeeFormula:
+          type: string
+          enum:
+            - INDIVIDUELLE
+            - FAMILLE
+        premiumMonthlyFee:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+          nullable: true
+    ArrayOfPremiumFees:
+      type: array
+      items:
+        $ref: '#/components/schemas/PremiumFee'
+
+    ApiRequestBodyCreateSubscription:
+      type: object
+      required:
+        - insuranceId
+        - premiumFeeId
+        - customer
+        - beneficiary
+        - paymentMode
+        - paymentReference
+      properties:
+        insuranceId:
+          $ref: '#/components/schemas/InsuranceId'
+        premiumFeeId:
+          $ref: '#/components/schemas/PremiumFeeId'
+        customer:
+          type: object
+          properties:
+            fullName:
+              type: string
+            phoneNumber:
+              type: string
+            birthDate:
+              type: string
+        beneficiary:
+          type: object
+          properties:
+            fullName:
+              type: string
+            phoneNumber:
+              type: string
+        paymentMode:
+          type: string
+          enum:
+            - PRELEVEMENT_AUTOMATIQUE
+            - PAIEMENT_MANUEL
+        paymentReference:
+          type: string
+    ApiRequestBodyUpdateSubscription:
+        type: object
+        required:
+          - paymentReference
+        properties:
+          paymentStatus:
+            type: string
+            enum:
+              - REUSSI
+              - ECHOUE
+              - EN_ATTENTE
+          paymentMode:
+            type: string
+            enum:
+              - PRELEVEMENT_AUTOMATIQUE
+              - PAIEMENT_MANUEL
+          paymentReference:
+            type: string
+    ApiRequestBodyCreatePremium:
+        type: object
+        required:
+          - contractNumber
+          - paymentReference
+        properties:
+          contractNumber:
+            type: string
+          paymentReference:
+            type: string
+    ApiRequestBodyUpdatePremium:
+        type: object
+        required:
+          - paymentReference
+        properties:
+          paymentStatus:
+            type: string
+            enum:
+              - REUSSI
+              - ECHOUE
+              - EN_ATTENTE
+          paymentReference:
+            type: string
+
+    ApiResponses:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+    ApiResponseCustomer:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Customer information
+          $ref: '#/components/schemas/Customer'
+    ApiResponseCustomers:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Customers information
+          $ref: '#/components/schemas/ArrayOfCustomers'
+    ApiResponseBeneficiary:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Beneficiary information
+          $ref: '#/components/schemas/Beneficiary'
+    ApiResponseBeneficiaries:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Beneficiaries information
+          $ref: '#/components/schemas/ArrayOfBeneficiaries'
+    ApiResponseInsurance:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Insurance information
+          $ref: '#/components/schemas/Insurance'
+    ApiResponseInsurances:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Insurances information
+          $ref: '#/components/schemas/ArrayOfInsurances'
+    ApiResponseSubscription:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Subscription information
+          $ref: '#/components/schemas/Subscription'
+    ApiResponseSubscriptions:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Subscriptions information
+          $ref: '#/components/schemas/ArrayOfSubscriptions'
+    ApiResponsePremium:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Premium payment information
+          $ref: '#/components/schemas/Premium'
+    ApiResponsePremiums:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Premium payments information
+          $ref: '#/components/schemas/ArrayOfPremiums'
+    ApiResponseUser:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: User information
+          $ref: '#/components/schemas/User'
+    ApiResponseUsers:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Users information
+          $ref: '#/components/schemas/ArrayOfUsers'
+    ApiResponseContract:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Customer's contract information
+          $ref: '#/components/schemas/Contract'
+    ApiResponseContractStatus:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: This attribute contain the actual status of the custmer's contract
+          type: object
+          properties:
+            expectedPayments: 
+              description: The number of premiums payments that should have been done since the subscription.
+              type: number
+            expectedTotalPayment:
+              description: The total amount of premiums payments expected since the subscription.
+              type: number
+            isUpToDate:
+              description: >
+                The customer's contract status 
+                  1. True for `ACTIF`
+                  2. False for `INACTIF`
+              type: boolean
+            missedPayments: 
+              type: array
+              items:
+                type: object
+                properties:
+                  month: 
+                    type: string 
+                  amount: 
+                    type: number        
+    ApiResponseContracts:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: >
+            This attribute can contain the following:
+              1. All the contracts available on this platform
+              2. All the contracts of a specific customer
+          $ref: '#/components/schemas/ArrayOfContracts'
+    ApiResponsePremiumFee:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Insurance premium monthly fee
+          $ref: '#/components/schemas/PremiumFee'
+    ApiResponsePremiumFees:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        data:
+          description: Insurance premiums monthly fee
+          $ref: '#/components/schemas/ArrayOfPremiumFees'
+
+
+    Error:
+      type: object
+      properties:
+        status:
+          description: A boolean describing the status of execution of the request. 
+          type: boolean
+        description:
+          description: request status description
+          type: string
+        message:
+          description: A human readable error message
+          type: string
+        errors:
+          description: An optional array or string that give details about the error.
+          oneOf:
+            - $ref: "#/components/schemas/RequestBodyValidationError"
+            - $ref: "#/components/schemas/SystemError"
+    SystemError:
+        type: object
+        properties:
+          name: 
+            type: string
+          message: 
+            type: string
+          stack: 
+            type: string
+    RequestBodyValidationError:
+        type: array
+        items:
+            type: object
+            required:
+               - "type"
+               - "value"
+               - "msg"
+               - "location"
+            properties:
+              "type":
+                type: string
+              "value":
+                type: string
+              "msg":
+                type: string
+              "path":
+                type: string
+              "location": 
+                type: string
+  securitySchemes:
+    cookieAuth: # The security scheme for Back office requests
+        type: apiKey
+        in: cookie
+        name: connect.sid
+    ApiKeyAuth: # The security scheme for USSD requests
+      type: apiKey
+      in: header
+      name: x-api-key
+security:
+  - cookieAuth: []
+  - ApiKeyAuth: []

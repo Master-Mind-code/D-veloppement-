@@ -1,0 +1,24 @@
+{
+    "dockerComposeFile": [
+        "docker-compose.yaml"
+    ],
+    "service": "belife-apis",
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopCompose",
+    "remoteUser": "root",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "mhutchie.git-graph",
+                "redhat.vscode-yaml",
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint",
+                "gruntfuggly.todo-tree",
+                "github.vscode-github-actions",
+                "github.copilot",
+                "github.copilot-chat",
+                "gruntfuggly.todo-tree"
+            ]
+        }
+    }
+}

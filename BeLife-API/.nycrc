@@ -1,0 +1,21 @@
+{
+    "all": true,
+    "extension": [
+        ".ts"
+    ],
+    "reporter": [
+        "text",
+        "lcov"
+    ],
+    "report-dir": "coverage",
+    "include": [
+        "**"
+    ],
+    "exclude": [
+        "node_modules/**",
+        ".nyc_output/**",
+        "coverage/**",
+        "test/**",
+        "logs/**"
+    ]
+}

@@ -1,0 +1,50 @@
+FROM node:20
+
+# Create a custom user with UID 1234 and GID 1234
+RUN groupadd -g 1234 belifegroup && \
+    useradd -m -u 1234 -g belifegroup belifeuser
+
+# Switch to the belifeuser user
+USER belifeuser
+
+# Set the workdir
+WORKDIR /home/belifeuser/app
+
+# Copy files to app directory
+COPY . .
+
+# Switch user to install dependencies
+USER root
+
+# Create log files for app
+RUN touch logs/access.log \
+    && touch logs/error.log \
+    && touch logs/app.log \
+    && touch logs/exceptions.log \
+    && touch logs/sequelize.error.log
+
+RUN chown belifeuser:belifegroup logs/access.log \
+    && chown belifeuser:belifegroup logs/error.log \
+    && chown belifeuser:belifegroup logs/app.log \
+    && chown belifeuser:belifegroup logs/exceptions.log \
+    && chown belifeuser:belifegroup logs/sequelize.error.log
+
+RUN chmod u+w logs/access.log \
+    && chmod u+w logs/error.log \
+    && chmod u+w logs/app.log \
+    && chmod u+w logs/exceptions.log \
+    && chmod u+w logs/sequelize.error.log
+
+# Remove unecessary folder/files
+RUN rm -rf .devcontainer \
+    && rm -rf .github \
+    && rm -rf .git
+
+# Install c8 for code coverage
+RUN npm install -g c8
+
+# Install app dependencies
+RUN npm install
+
+# Switch to the belifeuser user
+USER belifeuser

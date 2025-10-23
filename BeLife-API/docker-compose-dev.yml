@@ -1,0 +1,67 @@
+networks:
+  app-tier:
+    external: true
+
+services:
+  belife-apis:
+    depends_on:
+      - redis
+    image: ghcr.io/kangson-e/belife_apis_im:dev
+    restart: always
+    ports:
+      - '3500:3500'
+    environment:
+      - NODE_ENV=$NODE_ENV
+      - NODE_USSD_API_KEY=$NODE_USSD_API_KEY
+      - NODE_SESSION_SECRET=$NODE_SESSION_SECRET
+      - PSQL_HOST=$PSQL_HOST
+      - PSQL_USER=$PSQL_USER
+      - PSQL_USER_PASSWORD=$PSQL_USER_PASSWORD
+      - PSQL_DB_NAME=$PSQL_DB_NAME
+      - PSQL_PORT=$PSQL_PORT
+      - PSQL_DRIVER=$PSQL_DRIVER
+      - REDIS_HOST=$REDIS_HOST
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - REDIS_PORT=$REDIS_PORT
+      - REDIS_DATABASE=$REDIS_DATABASE
+    container_name: belife_apis_con
+    volumes:
+      - ..:/workspace
+      - dummy:/workspace/.venv
+    networks:
+      - app-tier
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  redis:
+    build:
+      context: .
+      dockerfile: Dockerfile.redis
+    container_name: belife_jobs_redis
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=$REDIS_PASSWORD
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
+      - REDIS_PORT_NUMBER=$REDIS_PORT
+      - REDIS_DATABASE=$REDIS_DATABASE
+    ports:
+      - $REDIS_PORT:$REDIS_PORT
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+    networks:
+      - app-tier
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    cap_add:
+      - SYS_ADMIN
+
+volumes:
+  dummy:
+  redis_data:
+    driver: local
